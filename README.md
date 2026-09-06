@@ -29,9 +29,10 @@ Browsing, search, and filters work immediately. Signing in (to save recipes or a
 
 The commands above work as-is in Terminal.app, iTerm, etc. — this is a standard Node/Next.js project, nothing here is Windows-specific. A few Mac-only notes:
 
-- **Node**: install via [nvm](https://github.com/nvm-sh/nvm) (`brew install nvm`) or `brew install node`. Any Node 18+ works.
-- **SQLite**: `sqlite3` ships with macOS, so `npx prisma db push` and `npm run db:studio` work with no extra install.
-- **Native modules**: if `npm install` fails trying to compile something, run `xcode-select --install` once to get the Command Line Tools, then retry.
+- **Node**: install via [nvm](https://github.com/nvm-sh/nvm) (`brew install nvm`) or `brew install node`. Any Node 18+ works. This is the only real prerequisite — everything else below comes from `npm install`.
+- **git**: needed to clone the repo. Already present if you have Xcode Command Line Tools (see below); otherwise `brew install git`.
+- **SQLite**: no separate install needed — Prisma bundles its own SQLite query engine, it doesn't rely on the system `sqlite3` binary. `npx prisma db push` and `npm run db:studio` work out of the box.
+- **Native modules**: none of this project's dependencies need compiling, but if `npm install` ever fails trying to build something (a transitive dependency), run `xcode-select --install` once to get the Command Line Tools, then retry.
 - **Quoting URLs**: macOS's default shell (zsh) treats `&` and `?` as special characters. Recipe URLs often contain `&` in a query string (tracking params, etc.), so when running the ingest script, quote each URL or the shell will silently truncate it at the `&`:
 
   ```bash
