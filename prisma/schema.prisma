@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Dev default is SQLite (zero setup). For production/multi-device deploys,
+  // switch provider to "postgresql" and point DATABASE_URL at Supabase/Neon/etc.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --- Auth.js (NextAuth) required tables ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  accounts       Account[]
+  sessions       Session[]
+  ownedRecipes   Recipe[]       @relation("RecipeOwner")
+  savedRecipes   SavedRecipe[]
+  scrapeRequests ScrapeRequest[]
+}
+
+// --- Core recipe library ---
+
+model Recipe {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  cuisine     String? // e.g. "Italian", "Thai" — used by the sidebar cuisine filter
+  imageUrl    String?
+  videoUrl    String? // embeddable video (YouTube/mp4) pulled from source recipe schema
+  // JSON-encoded string[] — SQLite has no native Json column type in Prisma,
+  // so these are serialized/parsed at the application boundary (see src/lib/recipeJson.ts).
+  ingredients String
+  steps       String // instructions only, no backstory
+  prepTime    Int? // minutes
+  cookTime    Int? // minutes
+  totalTime   Int? // minutes
+  servings    String?
+
+  sourceUrl  String? // original page the recipe was scraped from
+  sourceName String? // display name of source site, e.g. "seriouseats.com"
+  isPublic   Boolean @default(true) // false = private, only visible to owner
+  popularity Int     @default(0) // simple score used to rank/filter scraped recipes
+
+  ownerId String?
+  owner   User?   @relation("RecipeOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  savedBy   SavedRecipe[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([cuisine])
+  @@index([title])
+}
+
+// A user's personal library entry (favorite / save) for any recipe, own or scraped
+model SavedRecipe {
+  id        String   @id @default(cuid())
+  userId    String
+  recipeId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
+}
+
+// Tracks a user-submitted "scrape this URL" job for the backend scraper
+model ScrapeRequest {
+  id        String   @id @default(cuid())
+  url       String
+  status    String   @default("pending") // pending | success | failed
+  error     String?
+  recipeId  String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}

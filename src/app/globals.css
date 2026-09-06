@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cream text-charcoal font-body;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-ember-500 px-5 py-2.5 font-body font-semibold text-cream shadow-card transition hover:bg-ember-600 hover:shadow-card-hover;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-full border border-ember-500 px-5 py-2.5 font-body font-semibold text-ember-600 transition hover:bg-ember-50;
+  }
+  .card {
+    @apply rounded-2xl bg-white shadow-card transition hover:shadow-card-hover;
+  }
+  .pill {
+    @apply rounded-full px-3 py-1 text-sm font-medium transition;
+  }
+}
