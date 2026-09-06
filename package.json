@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "ingest": "tsx prisma/ingest-one.ts"
   },
   "dependencies": {
     "next": "14.2.35",
