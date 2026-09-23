@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Schibsted_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -20,6 +20,13 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Recipe MicroCosm",
   description: "A personal recipe library — just the recipes, no backstory.",
+};
+
+// viewport-fit=cover lets the mobile chat sheet pad for notches and home bars.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
