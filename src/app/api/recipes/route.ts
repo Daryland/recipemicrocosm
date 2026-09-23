@@ -17,10 +17,9 @@ export async function GET(req: Request) {
     where: {
       isPublic: true,
       ...(cuisine ? { cuisine } : {}),
-      // SQLite's default text comparison is already case-insensitive for ASCII,
-      // so no `mode: "insensitive"` here (that option is Postgres-only in Prisma).
-      ...(letter ? { title: { startsWith: letter } } : {}),
-      ...(q ? { title: { contains: q } } : {}),
+      // Postgres text comparison is case-sensitive, so match case-insensitively.
+      ...(letter ? { title: { startsWith: letter, mode: "insensitive" } } : {}),
+      ...(q ? { title: { contains: q, mode: "insensitive" } } : {}),
     },
     orderBy: [{ popularity: "desc" }, { title: "asc" }],
     select: {

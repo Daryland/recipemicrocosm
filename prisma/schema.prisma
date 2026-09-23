@@ -3,9 +3,9 @@ generator client {
 }
 
 datasource db {
-  // Dev default is SQLite (zero setup). For production/multi-device deploys,
-  // switch provider to "postgresql" and point DATABASE_URL at Supabase/Neon/etc.
-  provider = "sqlite"
+  // Hosted Postgres (e.g. Neon via Vercel Storage). Vercel's serverless
+  // filesystem is read-only/ephemeral, so SQLite can't be used in production.
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -71,8 +71,8 @@ model Recipe {
   cuisine     String? // e.g. "Italian", "Thai" — used by the sidebar cuisine filter
   imageUrl    String?
   videoUrl    String? // embeddable video (YouTube/mp4) pulled from source recipe schema
-  // JSON-encoded string[] — SQLite has no native Json column type in Prisma,
-  // so these are serialized/parsed at the application boundary (see src/lib/recipeJson.ts).
+  // JSON-encoded string[] — serialized/parsed at the application boundary
+  // (see src/lib/recipeJson.ts). Kept as text from the original SQLite schema.
   ingredients String
   steps       String // instructions only, no backstory
   prepTime    Int? // minutes

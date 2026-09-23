@@ -4,13 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint .",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "ingest": "tsx prisma/ingest-one.ts"
+    "ingest": "tsx prisma/ingest-one.ts",
+    "db:copy-sqlite": "tsx prisma/copy-sqlite-to-postgres.ts"
   },
   "dependencies": {
     "next": "14.2.35",
