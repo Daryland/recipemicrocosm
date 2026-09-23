@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { RecipeCard } from "@/components/RecipeCard";
+import { RecipeSearch } from "@/components/RecipeSearch";
 
 export default async function HomePage() {
   const popular = await prisma.recipe.findMany({
@@ -29,21 +30,9 @@ export default async function HomePage() {
           Paste one in or pull one from anywhere on the web, then browse your whole
           collection with none of the filler.
         </p>
-        <form action="/recipes" className="mt-8 flex max-w-xl gap-2" role="search">
-          <label htmlFor="hero-search" className="sr-only">
-            Search recipes
-          </label>
-          <input
-            id="hero-search"
-            type="search"
-            name="q"
-            placeholder="What are you cooking?"
-            className="field h-12 flex-1 text-base"
-          />
-          <button type="submit" className="btn-primary h-12 px-6">
-            Search
-          </button>
-        </form>
+        <div className="mt-8 flex max-w-xl">
+          <RecipeSearch size="lg" placeholder="What are you cooking?" />
+        </div>
         <p className="mt-4 text-sm text-ink-muted">
           Or{" "}
           <Link href="/recipes" className="font-semibold text-ink underline decoration-line-strong underline-offset-4 hover:decoration-tomato-500">

@@ -5,6 +5,7 @@ import { Providers } from "@/components/Providers";
 import { TopNav } from "@/components/TopNav";
 import { SideMenu } from "@/components/SideMenu";
 import { AlphabetRail } from "@/components/AlphabetRail";
+import { ChatWidget } from "@/components/ChatWidget";
 
 const schibsted = Schibsted_Grotesk({
   subsets: ["latin"],
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
             <AlphabetRail />
           </div>
+          <ChatWidget />
         </Providers>
       </body>
     </html>
