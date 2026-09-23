@@ -12,6 +12,10 @@ const schibsted = Schibsted_Grotesk({
   weight: ["400", "500", "600", "700", "800"],
 });
 
+// SideMenu (on every page) and the home page read recipes from the database,
+// so render on request instead of baking stale data in at build time.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Recipe MicroCosm",
   description: "A personal recipe library — just the recipes, no backstory.",
