@@ -28,3 +28,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# image finder working files
+scripts/image-candidates.json
+scripts/still-missing.json
+scripts/search-list.json
+scripts/search-urls*.json
+scripts/search-urls-raw.txt
+scripts/find-run.log
+scripts/image-review.html
+scripts/rejected-images.json
+prisma/deleted-alcohol-recipes.json
+scripts/applied-images.json
+scripts/ratings-checked.json
+scripts/ratings-run.log
