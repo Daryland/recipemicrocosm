@@ -6,34 +6,41 @@ export async function SideMenu() {
     by: ["cuisine"],
     where: { isPublic: true, cuisine: { not: null } },
     _count: { cuisine: true },
-    orderBy: { _count: { cuisine: "desc" } },
   });
 
+  // Cuisine values like "European - Irish" collapse into one "European" nav
+  // entry instead of cluttering the sidebar with one line per sub-region.
+  const groups = new Map<string, number>();
+  for (const c of cuisines) {
+    const raw = c.cuisine ?? "";
+    const top = raw.includes(" - ") ? raw.split(" - ")[0] : raw;
+    groups.set(top, (groups.get(top) ?? 0) + c._count.cuisine);
+  }
+  const sortedGroups = [...groups.entries()].sort((a, b) => b[1] - a[1]);
+
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-ember-100 bg-white/60 px-5 py-6 lg:block">
-      <div className="mb-8">
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-charcoal-light">
-          Cuisine
-        </h2>
-        <ul className="space-y-1">
+    <aside className="hidden w-60 shrink-0 border-r border-line px-4 py-8 lg:block">
+      <nav className="sticky top-24" aria-label="Cuisines">
+        <h2 className="mb-2 px-2.5 text-sm font-semibold text-ink">Cuisine</h2>
+        <ul>
           <li>
-            <Link href="/recipes" className="pill block hover:bg-ember-50">
+            <Link href="/recipes" className="nav-link block">
               All recipes
             </Link>
           </li>
-          {cuisines.map((c) => (
-            <li key={c.cuisine}>
+          {sortedGroups.map(([name, count]) => (
+            <li key={name}>
               <Link
-                href={`/recipes?cuisine=${encodeURIComponent(c.cuisine ?? "")}`}
-                className="pill flex items-center justify-between hover:bg-ember-50"
+                href={`/recipes?cuisine=${encodeURIComponent(name)}`}
+                className="nav-link flex items-center justify-between"
               >
-                <span>{c.cuisine}</span>
-                <span className="text-xs text-charcoal-light">{c._count.cuisine}</span>
+                <span>{name}</span>
+                <span className="text-xs tabular-nums text-ink-faint">{count}</span>
               </Link>
             </li>
           ))}
         </ul>
-      </div>
+      </nav>
     </aside>
   );
 }

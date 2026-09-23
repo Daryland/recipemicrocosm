@@ -9,39 +9,33 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        cream: {
-          DEFAULT: "#FFF8EE",
-          dark: "#FBEEDB",
+        paper: "#FAFAF8",
+        ink: {
+          DEFAULT: "#1B211D",
+          muted: "#66706A",
+          faint: "#9AA19C",
         },
-        charcoal: {
-          DEFAULT: "#2A2018",
-          light: "#5B4B3C",
+        line: {
+          DEFAULT: "#E4E6E1",
+          strong: "#CDD1CB",
         },
-        ember: {
-          50: "#FDEEE9",
-          100: "#FAD9CC",
-          300: "#F0916A",
-          500: "#E4572E",
-          600: "#C7441F",
-          700: "#A3361A",
-        },
-        gold: {
-          200: "#FBE3A3",
-          400: "#F4B942",
-          500: "#F0A500",
+        tomato: {
+          50: "#FCEDE8",
+          500: "#CF3A1F",
+          600: "#B02F17",
         },
         basil: {
-          500: "#5B7B4B",
-          600: "#496238",
+          600: "#3F6B3A",
         },
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "Georgia", "serif"],
-        body: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["var(--font-schibsted)", "system-ui", "sans-serif"],
       },
-      boxShadow: {
-        card: "0 2px 10px rgba(42, 32, 24, 0.08)",
-        "card-hover": "0 8px 24px rgba(42, 32, 24, 0.14)",
+      borderRadius: {
+        DEFAULT: "6px",
+      },
+      letterSpacing: {
+        tightest: "-0.035em",
       },
     },
   },

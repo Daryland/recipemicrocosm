@@ -24,54 +24,67 @@ export default async function RecipeDetailPage({ params }: { params: { slug: str
   const ingredients = decodeStringList(recipe.ingredients);
   const steps = decodeStringList(recipe.steps);
 
-  return (
-    <article className="mx-auto max-w-3xl">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        {recipe.cuisine && <span className="pill bg-ember-50 text-ember-700">{recipe.cuisine}</span>}
-        {recipe.totalTime && <span className="text-sm text-charcoal-light">{recipe.totalTime} min total</span>}
-        {recipe.servings && <span className="text-sm text-charcoal-light">Serves {recipe.servings}</span>}
-      </div>
+  const facts = [
+    recipe.totalTime ? { label: "Total time", value: `${recipe.totalTime} min` } : null,
+    recipe.servings ? { label: "Serves", value: String(recipe.servings) } : null,
+    recipe.cuisine ? { label: "Cuisine", value: recipe.cuisine } : null,
+  ].filter((f): f is { label: string; value: string } => f !== null);
 
-      <h1 className="mb-6 font-display text-4xl font-bold">{recipe.title}</h1>
+  return (
+    <article className="mx-auto max-w-4xl">
+      <header className="mb-8">
+        <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.02] tracking-tightest sm:text-5xl">
+          {recipe.title}
+        </h1>
+
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border-y border-line py-4">
+          {facts.length > 0 && (
+            <dl className="flex flex-wrap gap-x-10 gap-y-3">
+              {facts.map((f) => (
+                <div key={f.label}>
+                  <dt className="text-xs text-ink-muted">{f.label}</dt>
+                  <dd className="mt-0.5 font-semibold tabular-nums">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <SaveButton recipeId={recipe.id} initialSaved={initialSaved} />
+        </div>
+      </header>
 
       {recipe.imageUrl && (
-        <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-2xl shadow-card">
+        <div className="relative mb-12 aspect-[16/9] w-full overflow-hidden rounded">
           <Image src={recipe.imageUrl} alt={recipe.title} fill className="object-cover" />
         </div>
       )}
 
-      <div className="mb-8">
-        <SaveButton recipeId={recipe.id} initialSaved={initialSaved} />
-      </div>
-
       {recipe.videoUrl && (
-        <div className="mb-10">
+        <div className="mb-12">
           <VideoEmbed url={recipe.videoUrl} />
         </div>
       )}
 
-      <div className="grid gap-10 md:grid-cols-[1fr_2fr]">
+      <div className="grid gap-12 md:grid-cols-[minmax(0,5fr)_minmax(0,8fr)]">
         <section>
-          <h2 className="mb-3 text-xl font-bold">Ingredients</h2>
-          <ul className="space-y-2">
+          <h2 className="section-title">Ingredients</h2>
+          <ul className="divide-y divide-line">
             {ingredients.map((ingredient, i) => (
-              <li key={i} className="flex gap-2 text-sm">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-ember-500" />
-                <span>{ingredient}</span>
+              <li key={i} className="py-2.5 text-[0.95rem] leading-snug">
+                {ingredient}
               </li>
             ))}
           </ul>
         </section>
 
         <section>
-          <h2 className="mb-3 text-xl font-bold">Steps</h2>
-          <ol className="space-y-4">
+          <h2 className="section-title">Steps</h2>
+          <ol className="space-y-6">
             {steps.map((step, i) => (
-              <li key={i} className="flex gap-4">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ember-500 text-sm font-semibold text-cream">
+              <li key={i} className="grid grid-cols-[2rem_1fr] gap-3">
+                <span className="pt-px text-lg font-extrabold tabular-nums leading-snug text-tomato-500">
                   {i + 1}
                 </span>
-                <p className="pt-0.5 text-sm leading-relaxed">{step}</p>
+                <p className="max-w-prose text-[0.95rem] leading-relaxed">{step}</p>
               </li>
             ))}
           </ol>
@@ -79,9 +92,14 @@ export default async function RecipeDetailPage({ params }: { params: { slug: str
       </div>
 
       {recipe.sourceUrl && (
-        <p className="mt-10 text-xs text-charcoal-light">
+        <p className="mt-14 border-t border-line pt-4 text-xs text-ink-muted">
           Source:{" "}
-          <a href={recipe.sourceUrl} target="_blank" rel="noreferrer" className="underline">
+          <a
+            href={recipe.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2 hover:text-ink"
+          >
             {recipe.sourceName ?? recipe.sourceUrl}
           </a>
         </p>

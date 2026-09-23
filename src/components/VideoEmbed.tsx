@@ -19,7 +19,7 @@ export function VideoEmbed({ url }: { url: string }) {
 
   if (youtubeEmbed) {
     return (
-      <div className="aspect-video w-full overflow-hidden rounded-2xl shadow-card">
+      <div className="aspect-video w-full overflow-hidden rounded bg-ink">
         <iframe
           src={youtubeEmbed}
           title="Recipe video"
@@ -32,7 +32,7 @@ export function VideoEmbed({ url }: { url: string }) {
   }
 
   return (
-    <video controls className="w-full rounded-2xl shadow-card" src={url}>
+    <video controls className="w-full rounded bg-ink" src={url}>
       Your browser does not support embedded video.
     </video>
   );

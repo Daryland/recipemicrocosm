@@ -8,9 +8,9 @@ export default function LoginPage() {
   const [sent, setSent] = useState(false);
 
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="mb-2 font-display text-3xl font-bold">Sign in</h1>
-      <p className="mb-8 text-sm text-charcoal-light">
+    <div className="mx-auto max-w-sm pt-8">
+      <h1 className="mb-2 text-4xl font-extrabold tracking-tightest">Sign in</h1>
+      <p className="mb-8 text-sm leading-relaxed text-ink-muted">
         Create a free account to save recipes and build your own library.
       </p>
 
@@ -23,10 +23,10 @@ export default function LoginPage() {
         </button>
       </div>
 
-      <div className="my-6 flex items-center gap-3 text-xs text-charcoal-light">
-        <div className="h-px flex-1 bg-ember-100" />
+      <div className="my-6 flex items-center gap-3 text-xs text-ink-muted">
+        <div className="h-px flex-1 bg-line" />
         or
-        <div className="h-px flex-1 bg-ember-100" />
+        <div className="h-px flex-1 bg-line" />
       </div>
 
       {sent ? (
@@ -46,10 +46,11 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="flex-1 rounded-full border border-ember-100 px-4 py-2 text-sm focus:border-ember-500 focus:outline-none"
+            aria-label="Email address"
+            className="field h-10 flex-1"
           />
           <button type="submit" className="btn-primary">
-            Send link
+            Email me a link
           </button>
         </form>
       )}

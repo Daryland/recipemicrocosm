@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Schibsted_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { TopNav } from "@/components/TopNav";
 import { SideMenu } from "@/components/SideMenu";
 import { AlphabetRail } from "@/components/AlphabetRail";
 
-const fraunces = Fraunces({
+const schibsted = Schibsted_Grotesk({
   subsets: ["latin"],
-  variable: "--font-fraunces",
-  weight: ["500", "600", "700"],
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-schibsted",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -24,14 +19,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="en" className={schibsted.variable}>
       <body>
         <Providers>
           <div className="flex min-h-screen">
             <SideMenu />
-            <div className="flex min-h-screen flex-1 flex-col">
+            <div className="flex min-h-screen min-w-0 flex-1 flex-col">
               <TopNav />
-              <main className="flex-1 px-6 py-8">{children}</main>
+              <main className="flex-1 px-5 py-10 sm:px-8">{children}</main>
             </div>
             <AlphabetRail />
           </div>

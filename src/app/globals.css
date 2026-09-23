@@ -4,24 +4,33 @@
 
 @layer base {
   body {
-    @apply bg-cream text-charcoal font-body;
+    @apply bg-paper font-sans text-ink antialiased;
   }
   h1, h2, h3, h4 {
-    @apply font-display;
+    @apply font-bold tracking-tight;
+  }
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-tomato-500;
+  }
+  ::selection {
+    @apply bg-tomato-50 text-ink;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-ember-500 px-5 py-2.5 font-body font-semibold text-cream shadow-card transition hover:bg-ember-600 hover:shadow-card-hover;
+    @apply inline-flex h-10 items-center justify-center rounded bg-ink px-4 text-sm font-semibold text-paper transition-colors hover:bg-ink/85 disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-full border border-ember-500 px-5 py-2.5 font-body font-semibold text-ember-600 transition hover:bg-ember-50;
+    @apply inline-flex h-10 items-center justify-center rounded border border-line-strong bg-white px-4 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-50;
   }
-  .card {
-    @apply rounded-2xl bg-white shadow-card transition hover:shadow-card-hover;
+  .field {
+    @apply w-full rounded border border-line-strong bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-faint transition-colors focus:border-ink focus:outline-none;
   }
-  .pill {
-    @apply rounded-full px-3 py-1 text-sm font-medium transition;
+  .nav-link {
+    @apply rounded px-2.5 py-1.5 text-sm font-medium text-ink-muted transition-colors hover:bg-line/60 hover:text-ink;
+  }
+  .section-title {
+    @apply mb-4 border-b border-line pb-2 text-lg font-bold tracking-tight;
   }
 }

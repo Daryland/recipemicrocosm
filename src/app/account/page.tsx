@@ -11,7 +11,7 @@ export default async function AccountPage() {
   if (!session?.user) {
     return (
       <div className="mx-auto max-w-md text-center">
-        <h1 className="mb-3 font-display text-2xl font-bold">Sign in to see your library</h1>
+        <h1 className="mb-4 text-2xl font-extrabold tracking-tightest">Sign in to see your library</h1>
         <Link href="/login" className="btn-primary">
           Go to sign in
         </Link>
@@ -36,21 +36,23 @@ export default async function AccountPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-12">
       <div>
-        <h1 className="mb-1 font-display text-3xl font-bold">My Library</h1>
-        <p className="text-sm text-charcoal-light">{session.user.email}</p>
+        <h1 className="text-4xl font-extrabold tracking-tightest">My library</h1>
+        <p className="mt-1 text-sm text-ink-muted">{session.user.email}</p>
       </div>
 
       <section>
-        <h2 className="mb-4 text-xl font-bold">Add a recipe</h2>
+        <h2 className="section-title">Add a recipe</h2>
         <AddRecipeForm />
       </section>
 
       <section>
-        <h2 className="mb-4 text-xl font-bold">Recipes I added ({owned.length})</h2>
+        <h2 className="section-title">
+          Recipes I added <span className="font-medium tabular-nums text-ink-muted">{owned.length}</span>
+        </h2>
         {owned.length === 0 ? (
-          <p className="text-sm text-charcoal-light">Nothing here yet.</p>
+          <p className="text-sm text-ink-muted">Recipes you import or paste in will show up here.</p>
         ) : (
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
             {owned.map((recipe) => (
               <RecipeCard key={recipe.id} recipe={recipe} />
             ))}
@@ -59,13 +61,15 @@ export default async function AccountPage() {
       </section>
 
       <section>
-        <h2 className="mb-4 text-xl font-bold">Saved recipes ({saved.length})</h2>
+        <h2 className="section-title">
+          Saved recipes <span className="font-medium tabular-nums text-ink-muted">{saved.length}</span>
+        </h2>
         {saved.length === 0 ? (
-          <p className="text-sm text-charcoal-light">
-            Browse the <Link href="/recipes" className="underline">library</Link> and save a few favorites.
+          <p className="text-sm text-ink-muted">
+            Browse the <Link href="/recipes" className="font-semibold text-ink underline underline-offset-4">library</Link> and save a few favorites.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
             {saved.map(({ recipe }) => (
               <RecipeCard key={recipe.id} recipe={recipe} />
             ))}

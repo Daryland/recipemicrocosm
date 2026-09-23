@@ -22,7 +22,7 @@ export function SaveButton({ recipeId, initialSaved }: { recipeId: string; initi
 
   return (
     <button onClick={toggle} disabled={isPending} className={saved ? "btn-secondary" : "btn-primary"}>
-      {saved ? "Saved to library ✓" : "Save to my library"}
+      {saved ? "Saved to library" : "Save to library"}
     </button>
   );
 }

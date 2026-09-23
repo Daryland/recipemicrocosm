@@ -60,20 +60,25 @@ export function AddRecipeForm() {
   }
 
   return (
-    <div className="card p-6">
-      <div className="mb-5 flex gap-2">
-        <button
-          onClick={() => setMode("url")}
-          className={mode === "url" ? "btn-primary" : "btn-secondary"}
-        >
-          Import from a link
-        </button>
-        <button
-          onClick={() => setMode("manual")}
-          className={mode === "manual" ? "btn-primary" : "btn-secondary"}
-        >
-          Paste in my own
-        </button>
+    <div className="rounded border border-line bg-white p-5 sm:p-6">
+      <div className="mb-5 inline-flex rounded border border-line bg-paper p-0.5" role="tablist">
+        {([
+          ["url", "Import from a link"],
+          ["manual", "Paste in my own"],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={mode === value}
+            onClick={() => setMode(value)}
+            className={`rounded-[4px] px-3 py-1.5 text-sm font-semibold transition-colors ${
+              mode === value ? "bg-white text-ink shadow-[0_0_0_1px_theme(colors.line.strong)]" : "text-ink-muted hover:text-ink"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {mode === "url" ? (
@@ -84,7 +89,8 @@ export function AddRecipeForm() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com/some-recipe"
-            className="flex-1 rounded-full border border-ember-100 px-4 py-2 text-sm focus:border-ember-500 focus:outline-none"
+            aria-label="Recipe link"
+            className="field h-10 flex-1"
           />
           <button type="submit" disabled={loading} className="btn-primary">
             {loading ? "Importing…" : "Import"}
@@ -97,13 +103,13 @@ export function AddRecipeForm() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Recipe title"
-            className="w-full rounded-lg border border-ember-100 px-4 py-2 text-sm focus:border-ember-500 focus:outline-none"
+            className="field"
           />
           <input
             value={cuisine}
             onChange={(e) => setCuisine(e.target.value)}
             placeholder="Cuisine (optional, e.g. Italian)"
-            className="w-full rounded-lg border border-ember-100 px-4 py-2 text-sm focus:border-ember-500 focus:outline-none"
+            className="field"
           />
           <textarea
             required
@@ -111,7 +117,7 @@ export function AddRecipeForm() {
             onChange={(e) => setIngredientsText(e.target.value)}
             placeholder={"Ingredients, one per line"}
             rows={5}
-            className="w-full rounded-lg border border-ember-100 px-4 py-2 text-sm focus:border-ember-500 focus:outline-none"
+            className="field"
           />
           <textarea
             required
@@ -119,7 +125,7 @@ export function AddRecipeForm() {
             onChange={(e) => setStepsText(e.target.value)}
             placeholder={"Steps, one per line"}
             rows={6}
-            className="w-full rounded-lg border border-ember-100 px-4 py-2 text-sm focus:border-ember-500 focus:outline-none"
+            className="field"
           />
           <button type="submit" disabled={loading} className="btn-primary">
             {loading ? "Saving…" : "Save recipe"}
@@ -127,7 +133,7 @@ export function AddRecipeForm() {
         </form>
       )}
 
-      {error && <p className="mt-3 text-sm text-ember-600">{error}</p>}
+      {error && <p className="mt-3 text-sm font-medium text-tomato-600" role="alert">{error}</p>}
     </div>
   );
 }

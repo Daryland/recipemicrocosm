@@ -6,7 +6,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useState } from "react";
 
 export function TopNav() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [query, setQuery] = useState("");
 
@@ -18,36 +18,40 @@ export function TopNav() {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-ember-100 bg-cream/95 px-6 py-4 backdrop-blur">
-      <Link href="/" className="font-display text-xl font-bold text-ember-600 whitespace-nowrap">
-        Recipe MicroCosm
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-line bg-paper/90 px-5 backdrop-blur sm:px-8">
+      <Link href="/" className="whitespace-nowrap text-lg font-extrabold tracking-tightest text-ink">
+        Recipe MicroCosm<span className="text-tomato-500">.</span>
       </Link>
 
-      <form onSubmit={handleSearch} className="ml-2 flex-1 max-w-xl">
+      <form onSubmit={handleSearch} className="ml-4 hidden max-w-md flex-1 sm:block" role="search">
+        <label htmlFor="nav-search" className="sr-only">
+          Search recipes
+        </label>
         <input
+          id="nav-search"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search recipes…"
-          className="w-full rounded-full border border-ember-100 bg-white px-4 py-2 text-sm shadow-sm focus:border-ember-500 focus:outline-none"
+          placeholder="Search recipes"
+          className="field h-9 bg-white"
         />
       </form>
 
-      <nav className="ml-auto flex items-center gap-3 text-sm">
-        <Link href="/recipes" className="pill hover:bg-ember-50">
+      <nav className="ml-auto flex items-center gap-1">
+        <Link href="/recipes" className="nav-link">
           Browse
         </Link>
         {status === "authenticated" ? (
           <>
-            <Link href="/account" className="pill hover:bg-ember-50">
-              My Library
+            <Link href="/account" className="nav-link">
+              My library
             </Link>
-            <button onClick={() => signOut()} className="btn-secondary">
+            <button onClick={() => signOut()} className="nav-link">
               Sign out
             </button>
           </>
         ) : (
-          <button onClick={() => signIn()} className="btn-primary">
+          <button onClick={() => signIn()} className="btn-primary ml-2 h-9">
             Sign in
           </button>
         )}
