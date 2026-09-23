@@ -45,6 +45,8 @@ export async function POST(req: Request) {
         servings: scraped.servings,
         sourceUrl: scraped.sourceUrl,
         sourceName: scraped.sourceName,
+        sourceRating: scraped.sourceRating,
+        sourceRatingCount: scraped.sourceRatingCount,
         ownerId: userId,
       },
     });

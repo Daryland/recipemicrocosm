@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { RatingBadge } from "@/components/Stars";
+import { combinedRating } from "@/lib/rating";
 
 export interface RecipeCardData {
   id: string;
@@ -8,6 +10,11 @@ export interface RecipeCardData {
   cuisine: string | null;
   imageUrl: string | null;
   totalTime: number | null;
+  // Optional so callers that don't load ratings still type-check.
+  sourceRating?: number | null;
+  sourceRatingCount?: number | null;
+  siteRatingSum?: number;
+  siteRatingCount?: number;
 }
 
 function Thumbnail({ recipe, sizes }: { recipe: RecipeCardData; sizes: string }) {
@@ -31,12 +38,27 @@ function Thumbnail({ recipe, sizes }: { recipe: RecipeCardData; sizes: string })
 }
 
 function Meta({ recipe }: { recipe: RecipeCardData }) {
-  if (!recipe.cuisine && !recipe.totalTime) return null;
+  const rating = combinedRating({
+    sourceRating: recipe.sourceRating ?? null,
+    sourceRatingCount: recipe.sourceRatingCount ?? null,
+    siteRatingSum: recipe.siteRatingSum ?? 0,
+    siteRatingCount: recipe.siteRatingCount ?? 0,
+  });
+  if (!recipe.cuisine && !recipe.totalTime && rating.average == null) return null;
   return (
-    <p className="mt-1 flex gap-3 text-xs text-ink-muted">
-      {recipe.cuisine && <span className="truncate">{recipe.cuisine}</span>}
-      {recipe.totalTime && <span className="shrink-0 tabular-nums">{recipe.totalTime} min</span>}
-    </p>
+    <>
+      {rating.average != null && (
+        <p className="mt-1">
+          <RatingBadge average={rating.average} count={rating.count} />
+        </p>
+      )}
+      {(recipe.cuisine || recipe.totalTime) && (
+        <p className="mt-1 flex gap-3 text-xs text-ink-muted">
+          {recipe.cuisine && <span className="truncate">{recipe.cuisine}</span>}
+          {recipe.totalTime && <span className="shrink-0 tabular-nums">{recipe.totalTime} min</span>}
+        </p>
+      )}
+    </>
   );
 }
 

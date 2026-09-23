@@ -13,6 +13,19 @@ export interface ScrapedRecipe {
   cuisine?: string;
   sourceUrl: string;
   sourceName: string;
+  sourceRating?: number;
+  sourceRatingCount?: number;
+}
+
+/** Reads schema.org aggregateRating ({ ratingValue, ratingCount|reviewCount }), scaled to 5 stars. */
+export function parseAggregateRating(value: unknown): { rating: number; count: number } | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const r = value as Record<string, unknown>;
+  const rating = Number(r.ratingValue);
+  const count = Number(r.ratingCount ?? r.reviewCount);
+  const best = Number(r.bestRating) || 5;
+  if (!Number.isFinite(rating) || rating <= 0 || !Number.isFinite(count) || count <= 0) return undefined;
+  return { rating: Math.min(5, (rating / best) * 5), count: Math.round(count) };
 }
 
 /** Parses an ISO 8601 duration like "PT30M" or "PT1H15M" into whole minutes. */
@@ -79,7 +92,7 @@ function extractVideoUrl(value: unknown): string | undefined {
 }
 
 /** Walks a JSON-LD node tree (which may use @graph) looking for a Recipe node. */
-function findRecipeNode(node: unknown): Record<string, unknown> | undefined {
+export function findRecipeNode(node: unknown): Record<string, unknown> | undefined {
   if (!node) return undefined;
   if (Array.isArray(node)) {
     for (const item of node) {
@@ -143,6 +156,7 @@ export async function scrapeRecipeFromUrl(url: string): Promise<ScrapedRecipe> {
   const totalTime = parseIsoDurationToMinutes(recipeNode.totalTime);
   const servings = firstString(recipeNode.recipeYield);
   const cuisine = firstString(recipeNode.recipeCuisine);
+  const aggregate = parseAggregateRating(recipeNode.aggregateRating);
 
   if (ingredients.length === 0 || steps.length === 0) {
     throw new Error("Found recipe data but it was missing ingredients or steps.");
@@ -161,5 +175,7 @@ export async function scrapeRecipeFromUrl(url: string): Promise<ScrapedRecipe> {
     cuisine,
     sourceUrl: url,
     sourceName: new URL(url).hostname.replace(/^www\./, ""),
+    sourceRating: aggregate?.rating,
+    sourceRatingCount: aggregate?.count,
   };
 }

@@ -101,6 +101,8 @@ async function main() {
           servings: scraped.servings,
           sourceUrl: url,
           sourceName: siteName,
+          sourceRating: scraped.sourceRating,
+          sourceRatingCount: scraped.sourceRatingCount,
           popularity: 50,
         },
       });

@@ -46,6 +46,8 @@ async function main() {
         servings: scraped.servings,
         sourceUrl: url,
         sourceName,
+        sourceRating: scraped.sourceRating,
+        sourceRatingCount: scraped.sourceRatingCount,
         popularity: 50,
       },
     });

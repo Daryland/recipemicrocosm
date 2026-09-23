@@ -15,6 +15,10 @@ export default async function HomePage() {
       cuisine: true,
       imageUrl: true,
       totalTime: true,
+      sourceRating: true,
+      sourceRatingCount: true,
+      siteRatingSum: true,
+      siteRatingCount: true,
     },
   });
 

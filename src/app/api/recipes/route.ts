@@ -29,6 +29,10 @@ export async function GET(req: Request) {
       cuisine: true,
       imageUrl: true,
       totalTime: true,
+      sourceRating: true,
+      sourceRatingCount: true,
+      siteRatingSum: true,
+      siteRatingCount: true,
       popularity: true,
     },
   });

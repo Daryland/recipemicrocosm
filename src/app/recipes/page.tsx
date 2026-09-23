@@ -29,6 +29,10 @@ export default async function RecipesPage({ searchParams }: RecipesPageProps) {
       cuisine: true,
       imageUrl: true,
       totalTime: true,
+      sourceRating: true,
+      sourceRatingCount: true,
+      siteRatingSum: true,
+      siteRatingCount: true,
     },
   });
 

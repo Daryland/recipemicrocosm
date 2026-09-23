@@ -1,10 +1,14 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import { SaveButton } from "@/components/SaveButton";
+import { StarRating } from "@/components/StarRating";
+import { combinedRating } from "@/lib/rating";
+import { DEVICE_COOKIE, validDeviceId } from "@/lib/device";
 import { decodeStringList } from "@/lib/recipeJson";
 
 export default async function RecipeDetailPage({ params }: { params: { slug: string } }) {
@@ -21,6 +25,15 @@ export default async function RecipeDetailPage({ params }: { params: { slug: str
     initialSaved = Boolean(existing);
   }
 
+  // Has this device already rated the recipe?
+  const deviceId = validDeviceId(cookies().get(DEVICE_COOKIE)?.value);
+  const yourRating = deviceId
+    ? await prisma.recipeRating.findUnique({
+        where: { recipeId_deviceId: { recipeId: recipe.id, deviceId } },
+        select: { value: true },
+      })
+    : null;
+
   const ingredients = decodeStringList(recipe.ingredients);
   const steps = decodeStringList(recipe.steps);
 
@@ -36,6 +49,14 @@ export default async function RecipeDetailPage({ params }: { params: { slug: str
         <h1 className="max-w-3xl text-4xl font-extrabold leading-[1.02] tracking-tightest sm:text-5xl">
           {recipe.title}
         </h1>
+
+        <div className="mt-4">
+          <StarRating
+            recipeId={recipe.id}
+            initial={combinedRating(recipe)}
+            initialYourRating={yourRating?.value ?? null}
+          />
+        </div>
 
         <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border-y border-line py-4">
           {facts.length > 0 && (

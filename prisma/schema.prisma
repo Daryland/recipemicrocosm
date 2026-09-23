@@ -85,10 +85,18 @@ model Recipe {
   isPublic   Boolean @default(true) // false = private, only visible to owner
   popularity Int     @default(0) // simple score used to rank/filter scraped recipes
 
+  // Star rating pulled from the source page's schema.org aggregateRating.
+  sourceRating      Float?
+  sourceRatingCount Int?
+  // Running totals of ratings left on this site (see RecipeRating).
+  siteRatingSum   Int @default(0)
+  siteRatingCount Int @default(0)
+
   ownerId String?
   owner   User?   @relation("RecipeOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   savedBy   SavedRecipe[]
+  ratings   RecipeRating[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
@@ -107,6 +115,23 @@ model SavedRecipe {
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, recipeId])
+}
+
+// One star rating per device per recipe. A device is identified by a random ID
+// stored in a long-lived cookie (browsers don't expose MAC addresses). The
+// unique constraint stops a device from rating a recipe twice; it can change
+// or remove its rating instead.
+model RecipeRating {
+  id        String   @id @default(cuid())
+  recipeId  String
+  deviceId  String
+  value     Int // 1-5
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, deviceId])
 }
 
 // Tracks a user-submitted "scrape this URL" job for the backend scraper
