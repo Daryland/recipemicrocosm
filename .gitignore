@@ -42,3 +42,4 @@ prisma/deleted-alcohol-recipes.json
 scripts/applied-images.json
 scripts/ratings-checked.json
 scripts/ratings-run.log
+scripts/*-run.log

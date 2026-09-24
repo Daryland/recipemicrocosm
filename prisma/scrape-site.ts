@@ -1,14 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { scrapeRecipeFromUrl } from "../src/lib/scrape";
+import { isAlcoholicDrink } from "../src/lib/alcohol";
 
 const prisma = new PrismaClient();
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 const DELAY_MS = 350;
-
-const ALCOHOL_TITLE_RE =
-  /\b(margarita|cocktail|sangria|mojito|daiquiri|spritz|martini|cosmopolitan|negroni|moscow mule|shandy|paloma|michelada|sidecar|highball|bellini|hurricane cocktail|salty dog|greyhound cocktail|seabreeze)\b/i;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,7 +75,7 @@ async function main() {
 
       const scraped = await scrapeRecipeFromUrl(url);
 
-      if (ALCOHOL_TITLE_RE.test(scraped.title)) {
+      if (isAlcoholicDrink(scraped.title, scraped.ingredients)) {
         alcoholSkipped++;
         console.log(`[${i + 1}/${urls.length}] SKIP (alcoholic drink): ${scraped.title}`);
         await sleep(DELAY_MS);

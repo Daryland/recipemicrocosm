@@ -28,6 +28,19 @@ export function parseAggregateRating(value: unknown): { rating: number; count: n
   return { rating: Math.min(5, (rating / best) * 5), count: Math.round(count) };
 }
 
+const NAMED_ENTITIES: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " ", ndash: "–", mdash: "—", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", hellip: "…", deg: "°", frac12: "½", frac14: "¼", frac34: "¾" };
+
+/** JSON-LD text is often still HTML-escaped ("Mac &amp; Cheese"); turn entities back into characters. */
+export function decodeEntities(text: string): string {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z0-9]+);/gi, (match, code: string) => {
+    if (code[0] === "#") {
+      const n = code[1].toLowerCase() === "x" ? parseInt(code.slice(2), 16) : Number(code.slice(1));
+      return Number.isFinite(n) && n > 0 ? String.fromCodePoint(n) : match;
+    }
+    return NAMED_ENTITIES[code.toLowerCase()] ?? match;
+  });
+}
+
 /** Parses an ISO 8601 duration like "PT30M" or "PT1H15M" into whole minutes. */
 function parseIsoDurationToMinutes(value: unknown): number | undefined {
   if (typeof value !== "string") return undefined;
@@ -81,6 +94,36 @@ function flattenIngredients(value: unknown): string[] {
   return [];
 }
 
+/**
+ * schema.org `image` is often a list of sizes, smallest first (e.g. a 225x225
+ * thumbnail). Pick the largest: by declared width, else the URL without a
+ * WordPress "-225x225" size suffix, else the last entry.
+ */
+function bestImageUrl(value: unknown): string | undefined {
+  const list = Array.isArray(value) ? value : value ? [value] : [];
+  const candidates = list
+    .map((item) => {
+      if (typeof item === "string") return { url: item, width: 0 };
+      if (item && typeof item === "object") {
+        const obj = item as Record<string, unknown>;
+        const url = firstString(obj.url ?? obj.contentUrl);
+        return url ? { url, width: Number(obj.width) || 0 } : undefined;
+      }
+      return undefined;
+    })
+    .filter((c): c is { url: string; width: number } => Boolean(c));
+  if (!candidates.length) return undefined;
+  const sizeOf = (u: string) => {
+    const m = u.match(/-(\d+)x(\d+)\.[a-z]+(?:\?|$)/i);
+    return m ? Number(m[1]) : Infinity; // no size suffix = original upload
+  };
+  return candidates.reduce((best, c) => {
+    const cw = c.width || sizeOf(c.url);
+    const bw = best.width || sizeOf(best.url);
+    return cw >= bw ? c : best;
+  }).url;
+}
+
 function extractVideoUrl(value: unknown): string | undefined {
   if (!value) return undefined;
   const video = Array.isArray(value) ? value[0] : value;
@@ -89,6 +132,60 @@ function extractVideoUrl(value: unknown): string | undefined {
   const embed = firstString(obj.embedUrl);
   if (embed) return embed;
   return firstString(obj.contentUrl);
+}
+
+/**
+ * Fallback for pages with no schema.org Recipe data but a plain-HTML layout:
+ * an "Ingredients" heading followed by lists, a "Method"/"Instructions"/
+ * "Directions" heading followed by a list, and optionally "Notes" with
+ * "Total time: 15 minutes" / "Makes 2 servings". Returns undefined unless it
+ * finds at least 2 ingredients and 1 step, so articles and roundups are skipped.
+ */
+function scrapeFromHeadings($: cheerio.CheerioAPI, url: string): ScrapedRecipe | undefined {
+  const headings = $("h2, h3, h4");
+  const sectionItems = (pattern: RegExp) => {
+    const heading = headings.filter((_, el) => pattern.test($(el).text().trim())).first();
+    if (!heading.length) return [];
+    const items: string[] = [];
+    for (let el = heading.next(); el.length && !el.is("h1, h2, h3, h4"); el = el.next()) {
+      if (el.is("ul, ol")) {
+        el.find("li").each((_, li) => {
+          const text = $(li).text().replace(/\s+/g, " ").trim();
+          if (text) items.push(text);
+        });
+      } else if (el.is("p")) {
+        // Sub-section labels inside the list area, e.g. "DRESSING:"
+        const text = el.text().replace(/\s+/g, " ").trim();
+        if (/^[^.!?]{1,40}:$/.test(text)) items.push(text);
+      }
+    }
+    return items;
+  };
+
+  const ingredients = sectionItems(/^ingredients\b/i);
+  const steps = sectionItems(/^(method|instructions|directions|steps)\b/i).filter((s) => !/:$/.test(s));
+  if (ingredients.filter((i) => !/:$/.test(i)).length < 2 || steps.length < 1) return undefined;
+
+  const notes = sectionItems(/^notes?\b/i).join("\n");
+  const time = notes.match(/total time:?\s*(?:(\d+)\s*h(?:ours?|rs?)?)?\s*(?:(\d+)\s*min)/i);
+  const totalTime = time ? Number(time[1] ?? 0) * 60 + Number(time[2] ?? 0) || undefined : undefined;
+  const servings = notes.match(/(?:makes|serves)\s+(\d+(?:\s*-\s*\d+)?\s*[a-z ]*)/i)?.[1]?.trim();
+
+  const title =
+    $("h1").first().text().replace(/\s+/g, " ").trim() ||
+    $('meta[property="og:title"]').attr("content")?.trim() ||
+    "Untitled Recipe";
+
+  return {
+    title,
+    imageUrl: $('meta[property="og:image"]').attr("content") || undefined,
+    ingredients,
+    steps,
+    totalTime,
+    servings,
+    sourceUrl: url,
+    sourceName: new URL(url).hostname.replace(/^www\./, ""),
+  };
 }
 
 /** Walks a JSON-LD node tree (which may use @graph) looking for a Recipe node. */
@@ -141,16 +238,18 @@ export async function scrapeRecipeFromUrl(url: string): Promise<ScrapedRecipe> {
   });
 
   if (!recipeNode) {
+    const fallback = scrapeFromHeadings($, url);
+    if (fallback) return fallback;
     throw new Error(
       "No structured recipe data (schema.org/Recipe) found on that page."
     );
   }
 
-  const title = firstString(recipeNode.name) ?? "Untitled Recipe";
-  const imageUrl = firstString(recipeNode.image);
+  const title = decodeEntities(firstString(recipeNode.name) ?? "Untitled Recipe");
+  const imageUrl = bestImageUrl(recipeNode.image);
   const videoUrl = extractVideoUrl(recipeNode.video);
-  const ingredients = flattenIngredients(recipeNode.recipeIngredient ?? recipeNode.ingredients);
-  const steps = flattenInstructions(recipeNode.recipeInstructions);
+  const ingredients = flattenIngredients(recipeNode.recipeIngredient ?? recipeNode.ingredients).map(decodeEntities);
+  const steps = flattenInstructions(recipeNode.recipeInstructions).map(decodeEntities);
   const prepTime = parseIsoDurationToMinutes(recipeNode.prepTime);
   const cookTime = parseIsoDurationToMinutes(recipeNode.cookTime);
   const totalTime = parseIsoDurationToMinutes(recipeNode.totalTime);
