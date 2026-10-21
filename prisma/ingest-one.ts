@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { scrapeRecipeFromUrl } from "../src/lib/scrape";
+import { isAlcoholicDrink } from "../src/lib/alcohol";
+import { taxonomyFields } from "../src/lib/taxonomy";
 
 const prisma = new PrismaClient();
 
@@ -7,7 +9,7 @@ function slugify(title: string): string {
   return title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-+|-+$/g, "") || "recipe";
 }
 
 async function uniqueSlug(base: string): Promise<string> {
@@ -29,6 +31,10 @@ async function main() {
       continue;
     }
     const scraped = await scrapeRecipeFromUrl(url);
+    if (isAlcoholicDrink(scraped.title, scraped.ingredients)) {
+      console.log("Skipped alcoholic drink:", scraped.title);
+      continue;
+    }
     const slug = await uniqueSlug(slugify(scraped.title));
     const sourceName = new URL(url).hostname.replace(/^www\./, "");
     const recipe = await prisma.recipe.create({
@@ -48,6 +54,7 @@ async function main() {
         sourceName,
         sourceRating: scraped.sourceRating,
         sourceRatingCount: scraped.sourceRatingCount,
+        ...taxonomyFields(scraped.title, scraped.ingredients, scraped.cuisine),
         popularity: 50,
       },
     });

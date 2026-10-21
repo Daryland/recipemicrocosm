@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { RecipeSearch } from "@/components/RecipeSearch";
+import { MobileMenu } from "@/components/MobileMenu";
 
-export function TopNav() {
+// `mobileMenu` is the sidebar, passed in from the layout so it can stay a server component.
+export function TopNav({ mobileMenu }: { mobileMenu?: React.ReactNode }) {
   const { status } = useSession();
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-line bg-paper/90 px-5 backdrop-blur sm:px-8">
+      {mobileMenu && <MobileMenu>{mobileMenu}</MobileMenu>}
       <Link href="/" className="whitespace-nowrap text-lg font-extrabold tracking-tightest text-ink">
         Recipe MicroCosm<span className="text-tomato-500">.</span>
       </Link>

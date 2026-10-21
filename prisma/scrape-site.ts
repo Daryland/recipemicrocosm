@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { scrapeRecipeFromUrl } from "../src/lib/scrape";
 import { isAlcoholicDrink } from "../src/lib/alcohol";
+import { taxonomyFields } from "../src/lib/taxonomy";
 
 const prisma = new PrismaClient();
 
@@ -101,6 +102,7 @@ async function main() {
           sourceName: siteName,
           sourceRating: scraped.sourceRating,
           sourceRatingCount: scraped.sourceRatingCount,
+          ...taxonomyFields(scraped.title, scraped.ingredients, scraped.cuisine),
           popularity: 50,
         },
       });

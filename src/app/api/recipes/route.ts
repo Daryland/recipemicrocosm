@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uniqueRecipeSlug } from "@/lib/slug";
 import { encodeStringList } from "@/lib/recipeJson";
+import { taxonomyFields } from "@/lib/taxonomy";
 
 // GET /api/recipes?cuisine=Italian&letter=A&q=chicken
 export async function GET(req: Request) {
@@ -75,6 +76,7 @@ export async function POST(req: Request) {
       ...data,
       ingredients: encodeStringList(data.ingredients),
       steps: encodeStringList(data.steps),
+      ...taxonomyFields(data.title, data.ingredients, data.cuisine),
       slug,
       ownerId: userId,
     },

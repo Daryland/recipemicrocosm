@@ -6,8 +6,16 @@ const fs = require("node:fs");
 const esc = (s) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
+// Skip photos already reviewed in an earlier round (applied or rejected).
+const readIds = (file, pick) =>
+  new Set(fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")).map(pick) : []);
+const reviewed = new Set([
+  ...readIds("scripts/applied-images.json", (a) => a.id),
+  ...readIds("scripts/rejected-images.json", (id) => id),
+]);
+
 const candidates = JSON.parse(fs.readFileSync("scripts/image-candidates.json", "utf8"))
-  .filter((c) => c.imageUrl)
+  .filter((c) => c.imageUrl && !reviewed.has(c.id))
   // Weakest matches first so they get the most attention.
   .sort((a, b) => (a.titleScore ?? 9) + (a.ingredientScore ?? 9) - ((b.titleScore ?? 9) + (b.ingredientScore ?? 9)));
 
@@ -19,8 +27,9 @@ const cards = candidates
     <figcaption>
       <span class="num">${i + 1}</span>
       <strong>${esc(c.title)}</strong>
+      ${c.method === "article" ? `<span class="flag">Article photo, check it shows the dish</span>` : ""}
       <span class="meta">${c.method === "source" ? "own source page" : `from: ${esc(c.pageTitle)}`}</span>
-      <span class="meta">${c.width}×${c.height}${c.titleScore != null ? ` · title ${c.titleScore} · ingredients ${c.ingredientScore}` : ""}</span>
+      <span class="meta">${c.width}×${c.height}${c.titleScore != null ? ` · title ${c.titleScore}` : ""}${c.ingredientScore != null ? ` · ingredients ${c.ingredientScore}` : ""}</span>
       <a href="${esc(c.pageUrl)}" target="_blank" rel="noopener">${esc(new URL(c.pageUrl).hostname)}</a>
     </figcaption>
   </figure>`
@@ -44,6 +53,7 @@ const html = `<!doctype html>
   figcaption { padding:10px; display:flex; flex-direction:column; gap:3px; }
   .meta { color:var(--muted); font-size:12px; }
   .num { color:var(--muted); font-size:12px; }
+  .flag { color:var(--reject); font-size:12px; font-weight:600; }
   a { font-size:12px; color:inherit; }
   .card.rejected { outline-color:var(--reject); }
   .card.rejected img { opacity:.25; }

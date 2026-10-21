@@ -99,6 +99,11 @@ function flattenIngredients(value: unknown): string[] {
  * thumbnail). Pick the largest: by declared width, else the URL without a
  * WordPress "-225x225" size suffix, else the last entry.
  */
+/** Some sites still list http:// image URLs; the page itself is served over https. */
+function toHttps(url: string | undefined): string | undefined {
+  return url?.replace(/^http:\/\//i, "https://");
+}
+
 function bestImageUrl(value: unknown): string | undefined {
   const list = Array.isArray(value) ? value : value ? [value] : [];
   const candidates = list
@@ -117,11 +122,13 @@ function bestImageUrl(value: unknown): string | undefined {
     const m = u.match(/-(\d+)x(\d+)\.[a-z]+(?:\?|$)/i);
     return m ? Number(m[1]) : Infinity; // no size suffix = original upload
   };
-  return candidates.reduce((best, c) => {
-    const cw = c.width || sizeOf(c.url);
-    const bw = best.width || sizeOf(best.url);
-    return cw >= bw ? c : best;
-  }).url;
+  return toHttps(
+    candidates.reduce((best, c) => {
+      const cw = c.width || sizeOf(c.url);
+      const bw = best.width || sizeOf(best.url);
+      return cw >= bw ? c : best;
+    }).url
+  );
 }
 
 function extractVideoUrl(value: unknown): string | undefined {
@@ -178,7 +185,7 @@ function scrapeFromHeadings($: cheerio.CheerioAPI, url: string): ScrapedRecipe |
 
   return {
     title,
-    imageUrl: $('meta[property="og:image"]').attr("content") || undefined,
+    imageUrl: toHttps($('meta[property="og:image"]').attr("content") || undefined),
     ingredients,
     steps,
     totalTime,
@@ -245,7 +252,12 @@ export async function scrapeRecipeFromUrl(url: string): Promise<ScrapedRecipe> {
     );
   }
 
-  const title = decodeEntities(firstString(recipeNode.name) ?? "Untitled Recipe");
+  // Some sites ship the recipe schema with an empty name; fall back to the
+  // page's own headline (minus a " - Site Name" suffix) so cards never go blank.
+  const pageTitle = ($('meta[property="og:title"]').attr("content") || $("h1").first().text() || $("title").text())
+    .replace(/\s+[-–|]\s+[^-–|]+$/, "")
+    .trim();
+  const title = decodeEntities(firstString(recipeNode.name)?.trim() || pageTitle || "Untitled Recipe");
   const imageUrl = bestImageUrl(recipeNode.image);
   const videoUrl = extractVideoUrl(recipeNode.video);
   const ingredients = flattenIngredients(recipeNode.recipeIngredient ?? recipeNode.ingredients).map(decodeEntities);

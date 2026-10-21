@@ -68,7 +68,10 @@ model Recipe {
   id          String   @id @default(cuid())
   slug        String   @unique
   title       String
-  cuisine     String? // e.g. "Italian", "Thai" — used by the sidebar cuisine filter
+  cuisine     String? // raw value from the source, e.g. "Italian", "European - Irish"
+  // Sidebar categories, worked out by src/lib/taxonomy.ts (run `npm run db:tag` to refresh).
+  origin      String? // cleaned-up cuisine, e.g. "Irish"; grouped into regions in taxonomy.ts
+  tags        String[] @default([]) // e.g. ["chicken", "curries", "dairy-free"]
   imageUrl    String?
   videoUrl    String? // embeddable video (YouTube/mp4) pulled from source recipe schema
   // JSON-encoded string[] — serialized/parsed at the application boundary
@@ -101,6 +104,8 @@ model Recipe {
   updatedAt DateTime      @updatedAt
 
   @@index([cuisine])
+  @@index([origin])
+  @@index([tags], type: Gin)
   @@index([title])
 }
 

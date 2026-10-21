@@ -1,46 +1,39 @@
-import Link from "next/link";
+import { cache, Suspense } from "react";
 import { prisma } from "@/lib/prisma";
+import { SideNav, type MenuCounts } from "@/components/SideNav";
 
-export async function SideMenu() {
-  const cuisines = await prisma.recipe.groupBy({
-    by: ["cuisine"],
-    where: { isPublic: true, cuisine: { not: null } },
-    _count: { cuisine: true },
-  });
+// Counts for every sidebar entry. cache() shares one set of queries between the
+// desktop sidebar and the mobile menu rendered in the same request.
+const getMenuCounts = cache(async (): Promise<MenuCounts> => {
+  const [tagRows, originRows, quick, total] = await Promise.all([
+    prisma.$queryRaw<{ tag: string; count: bigint }[]>`
+      SELECT unnest(tags) AS tag, COUNT(*) AS count FROM "Recipe" WHERE "isPublic" GROUP BY 1`,
+    prisma.recipe.groupBy({ by: ["origin"], where: { isPublic: true, origin: { not: null } }, _count: true }),
+    prisma.recipe.count({ where: { isPublic: true, totalTime: { lte: 30 } } }),
+    prisma.recipe.count({ where: { isPublic: true } }),
+  ]);
+  return {
+    tags: Object.fromEntries(tagRows.map((r) => [r.tag, Number(r.count)])),
+    origins: Object.fromEntries(originRows.map((r) => [r.origin!, r._count])),
+    quick,
+    total,
+  };
+});
 
-  // Cuisine values like "European - Irish" collapse into one "European" nav
-  // entry instead of cluttering the sidebar with one line per sub-region.
-  const groups = new Map<string, number>();
-  for (const c of cuisines) {
-    const raw = c.cuisine ?? "";
-    const top = raw.includes(" - ") ? raw.split(" - ")[0] : raw;
-    groups.set(top, (groups.get(top) ?? 0) + c._count.cuisine);
-  }
-  const sortedGroups = [...groups.entries()].sort((a, b) => b[1] - a[1]);
+export async function SideMenu({ variant = "desktop" }: { variant?: "desktop" | "mobile" }) {
+  const nav = (
+    // SideNav reads the URL's filters; Suspense keeps that from opting the page out of streaming.
+    <Suspense>
+      <SideNav counts={await getMenuCounts()} />
+    </Suspense>
+  );
+  if (variant === "mobile") return nav;
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-line px-4 py-8 lg:block">
-      <nav className="sticky top-24" aria-label="Cuisines">
-        <h2 className="mb-2 px-2.5 text-sm font-semibold text-ink">Cuisine</h2>
-        <ul>
-          <li>
-            <Link href="/recipes" className="nav-link block">
-              All recipes
-            </Link>
-          </li>
-          {sortedGroups.map(([name, count]) => (
-            <li key={name}>
-              <Link
-                href={`/recipes?cuisine=${encodeURIComponent(name)}`}
-                className="nav-link flex items-center justify-between"
-              >
-                <span>{name}</span>
-                <span className="text-xs tabular-nums text-ink-faint">{count}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+    // Pinned to the viewport and scrolled on its own so a long menu never
+    // stretches the page past the main content (and its footer).
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 self-start overflow-y-auto border-r border-line px-4 py-8 lg:block">
+      {nav}
     </aside>
   );
 }

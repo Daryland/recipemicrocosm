@@ -6,6 +6,7 @@ import { TopNav } from "@/components/TopNav";
 import { SideMenu } from "@/components/SideMenu";
 import { AlphabetRail } from "@/components/AlphabetRail";
 import { ChatWidget } from "@/components/ChatWidget";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const schibsted = Schibsted_Grotesk({
   subsets: ["latin"],
@@ -37,8 +38,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex min-h-screen">
             <SideMenu />
             <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-              <TopNav />
+              <TopNav mobileMenu={<SideMenu variant="mobile" />} />
               <main className="flex-1 px-5 py-10 sm:px-8">{children}</main>
+              <SiteFooter />
             </div>
             <AlphabetRail />
           </div>

@@ -7,6 +7,10 @@
 // 2. Otherwise checks candidate pages for the same recipe on other sites
 //    (scripts/search-urls.json, { recipeId: [urls] }) and only accepts a page
 //    whose recipe matches ours on BOTH title and ingredients.
+// 3. Failing that, accepts an article page with no structured recipe data
+//    (blog write-ups, TV segments) whose headline closely matches our title,
+//    using its og:image. These are marked method "article" — review them
+//    carefully, since the photo may not show the dish.
 // Recipes still without a match are listed in scripts/still-missing.json.
 import fs from "node:fs";
 import * as cheerio from "cheerio";
@@ -85,7 +89,7 @@ async function get(url: string, timeoutMs = 15000) {
 }
 
 type Img = { url: string; width?: number };
-type PageRecipe = { name?: string; ingredients: string[]; images: Img[]; mentionsBayless: boolean };
+type PageRecipe = { name?: string; headline: string; ingredients: string[]; images: Img[]; mentionsBayless: boolean };
 
 function toImgs(v: unknown): Img[] {
   if (!v) return [];
@@ -136,10 +140,12 @@ async function readPage(url: string): Promise<PageRecipe | undefined> {
   const og = $('meta[property="og:image"]').attr("content");
   const ogWidth = Number($('meta[property="og:image:width"]').attr("content")) || undefined;
   const images = [...toImgs(recipe?.image), ...(og ? [{ url: og, width: ogWidth }] : [])].filter(
-    (i) => /^https?:\/\//.test(i.url) && !/logo|placeholder|default|avatar|icon/i.test(i.url)
+    // fn-feature / shareGraphic are Food Network's and Food.com's site-wide share images.
+    (i) => /^https?:\/\//.test(i.url) && !/logo|placeholder|default|avatar|icon|fn-feature|sharegraphic/i.test(i.url)
   );
   return {
     name: (recipe?.name as string) ?? $("h1").first().text().trim(),
+    headline: ($('meta[property="og:title"]').attr("content") ?? $("title").text()).trim(),
     ingredients: ((recipe?.recipeIngredient as string[]) ?? []).map(String),
     images,
     mentionsBayless: /bayless/i.test(html),
@@ -204,7 +210,7 @@ type Candidate = {
   id: string;
   title: string;
   sourceName: string | null;
-  method: "source" | "search" | "none";
+  method: "source" | "search" | "article" | "none";
   imageUrl?: string;
   width?: number;
   height?: number;
@@ -237,10 +243,24 @@ async function findForRecipe(r: { id: string; title: string; sourceUrl: string |
   // 2. Same recipe on other sites, from the gathered search results.
   let best: Candidate | undefined;
   let bestScore = 0;
+  let article: Candidate | undefined;
+  const bayless = r.sourceName?.includes("rickbayless") ?? false;
   const urls = (searchUrls[r.id] ?? []).filter((u) => !SKIP_HOSTS.some((h) => u.includes(h)));
   for (const url of urls) {
     const page = await readPage(url);
-    if (!page || !page.images.length || !page.ingredients.length) continue;
+    if (!page || !page.images.length) continue;
+    if (!page.ingredients.length) {
+      // 3. Article fallback: headline must match closely, and a Bayless
+      // recipe's article must actually mention him.
+      const ts = titleScore(r.title, `${page.name ?? ""} ${page.headline}`);
+      if (article || ts < 0.75 || (bayless && !page.mentionsBayless)) continue;
+      const img = bestImage(page.images);
+      const size = await checkImage(img.url);
+      if (size) {
+        article = { ...base, method: "article", imageUrl: img.url, width: size.width, height: size.height, pageUrl: url, pageTitle: page.headline || page.name, titleScore: +ts.toFixed(2) };
+      }
+      continue;
+    }
     const ts = titleScore(r.title, page.name ?? "");
     const is = ingredientScore(ours, page.ingredients);
     if (ts < 0.5 || is < 0.5) continue;
@@ -263,7 +283,7 @@ async function findForRecipe(r: { id: string; title: string; sourceUrl: string |
       mentionsBayless: page.mentionsBayless,
     };
   }
-  return best ?? { ...base, method: "none" };
+  return best ?? article ?? { ...base, method: "none" };
 }
 
 // Windows can briefly lock a file an editor or virus scanner is reading.
@@ -306,7 +326,7 @@ async function main() {
     JSON.stringify(all.filter((c) => c.method === "none").map((c) => ({ id: c.id, title: c.title, sourceName: c.sourceName })), null, 2)
   );
   console.log(
-    `\nsource: ${all.filter((c) => c.method === "source").length}, search: ${all.filter((c) => c.method === "search").length}, none: ${all.filter((c) => c.method === "none").length}`
+    `\nsource: ${all.filter((c) => c.method === "source").length}, search: ${all.filter((c) => c.method === "search").length}, article: ${all.filter((c) => c.method === "article").length}, none: ${all.filter((c) => c.method === "none").length}`
   );
 }
 

@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { scrapeRecipeFromUrl } from "@/lib/scrape";
 import { uniqueRecipeSlug } from "@/lib/slug";
 import { encodeStringList } from "@/lib/recipeJson";
+import { isAlcoholicDrink } from "@/lib/alcohol";
+import { taxonomyFields } from "@/lib/taxonomy";
 
 const bodySchema = z.object({ url: z.string().url() });
 
@@ -28,6 +30,9 @@ export async function POST(req: Request) {
 
   try {
     const scraped = await scrapeRecipeFromUrl(url);
+    if (isAlcoholicDrink(scraped.title, scraped.ingredients)) {
+      throw new Error("Alcoholic drink recipes can't be added to this library.");
+    }
     const slug = await uniqueRecipeSlug(scraped.title);
 
     const recipe = await prisma.recipe.create({
@@ -47,6 +52,7 @@ export async function POST(req: Request) {
         sourceName: scraped.sourceName,
         sourceRating: scraped.sourceRating,
         sourceRatingCount: scraped.sourceRatingCount,
+        ...taxonomyFields(scraped.title, scraped.ingredients, scraped.cuisine),
         ownerId: userId,
       },
     });

@@ -28,7 +28,8 @@ async function main() {
     }
     const res = await prisma.recipe.updateMany({
       where: { id: c.id, OR: [{ imageUrl: null }, { imageUrl: "" }] },
-      data: { imageUrl: c.imageUrl },
+      // Pages are served over https, so store photo links that way too.
+      data: { imageUrl: c.imageUrl!.replace(/^http:\/\//i, "https://") },
     });
     updated += res.count;
   }
