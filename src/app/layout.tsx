@@ -7,6 +7,7 @@ import { SideMenu } from "@/components/SideMenu";
 import { AlphabetRail } from "@/components/AlphabetRail";
 import { ChatWidget } from "@/components/ChatWidget";
 import { SiteFooter } from "@/components/SiteFooter";
+import { Analytics } from "@vercel/analytics/next";
 
 const schibsted = Schibsted_Grotesk({
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
           <ChatWidget />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
