@@ -65,6 +65,8 @@ export function SideNav({ counts }: { counts: MenuCounts }) {
     if (param === "origin") next.delete("region");
     if (param === "region") next.delete("origin");
     if (param === "origin" || param === "region") next.delete("cuisine");
+    // A new sort gets a fresh shuffle (see src/lib/browse.ts).
+    if (param === "sort") next.delete("seed");
     next.delete("letter");
     const qs = next.toString();
     return qs ? `/recipes?${qs}` : "/recipes";
