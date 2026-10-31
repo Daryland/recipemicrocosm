@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ContactDialog } from "@/components/ContactDialog";
+import { SupportDialog } from "@/components/SupportDialog";
 
 export function SiteFooter() {
   // The "Get in touch" form only shows once email sending is configured in .env.
@@ -22,13 +23,25 @@ export function SiteFooter() {
           <p className="mt-2 max-w-xs text-sm text-ink-muted">
             Found a broken recipe, have a suggestion, or want to share a favorite?
           </p>
-          {contactEnabled && <ContactDialog />}
+          <div className="flex flex-wrap gap-2">
+            {contactEnabled && <ContactDialog />}
+            {/* Also opens itself once per visitor, after they've browsed a while. */}
+            <SupportDialog autoOpen />
+          </div>
         </div>
       </div>
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-6 text-xs text-ink-faint">
         <span>© {new Date().getFullYear()} Recipe MicroCosm</span>
-        <span>Recipes credited to their original sources.</span>
+        <Link href="/privacy" className="hover:text-ink hover:underline hover:underline-offset-4">
+          Privacy Policy
+        </Link>
+        <span>
+          Recipes credited to their original sources. Own one?{" "}
+          <Link href="/copyright" className="underline underline-offset-4 hover:text-ink">
+            Request removal
+          </Link>
+        </span>
       </div>
     </footer>
   );

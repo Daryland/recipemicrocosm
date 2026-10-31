@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { RecipeCard } from "@/components/RecipeCard";
 import { AddRecipeForm } from "@/components/AddRecipeForm";
+import { DeleteAccount } from "@/components/DeleteAccount";
 
 export default async function AccountPage() {
   const session = await getServerSession(authOptions);
@@ -21,7 +22,7 @@ export default async function AccountPage() {
 
   const userId = (session.user as { id: string }).id;
 
-  const [saved, owned] = await Promise.all([
+  const [saved, owned, user] = await Promise.all([
     prisma.savedRecipe.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
@@ -31,6 +32,7 @@ export default async function AccountPage() {
       where: { ownerId: userId },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } }),
   ]);
 
   return (
@@ -75,6 +77,11 @@ export default async function AccountPage() {
             ))}
           </div>
         )}
+      </section>
+
+      <section>
+        <h2 className="section-title">Account</h2>
+        <DeleteAccount email={session.user.email ?? ""} hasPassword={!!user?.passwordHash} />
       </section>
     </div>
   );

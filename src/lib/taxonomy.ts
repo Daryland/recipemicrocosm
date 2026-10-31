@@ -10,12 +10,23 @@ export interface Category {
 }
 
 export interface Section {
-  key: "ingredient" | "dish" | "diet";
+  key: "seasoning" | "ingredient" | "dish" | "diet";
   title: string;
   items: Category[];
 }
 
 export const SECTIONS: Section[] = [
+  {
+    key: "seasoning",
+    title: "Seasonings",
+    items: [
+      { slug: "seasonings", label: "All seasonings" },
+      { slug: "spice-blends", label: "Spice blends & mixes" },
+      { slug: "rubs", label: "Rubs" },
+      { slug: "seasoned-salts", label: "Seasoned salts" },
+      { slug: "sausage-seasonings", label: "Sausage & brat seasonings" },
+    ],
+  },
   {
     key: "ingredient",
     title: "Main ingredient",
@@ -46,6 +57,7 @@ export const SECTIONS: Section[] = [
       { slug: "drinks", label: "Drinks" },
       { slug: "sauces", label: "Sauces & condiments" },
       { slug: "pickles", label: "Pickles & ferments" },
+      { slug: "sausages", label: "Sausages & brats" },
     ],
   },
   {
@@ -195,6 +207,47 @@ function hasDish(slug: string, title: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Seasonings (name-based: the blend's name ends with what it is, so "Taco
+// Seasoning" counts but "Chicken with Taco Seasoning" doesn't)
+// ---------------------------------------------------------------------------
+
+// The recipe's bare name: "Make Franconian bratwurst yourself – a classic" → "franconian bratwurst",
+// "Copycat McCormick Pot Roast Seasoning Mix #2" → "mccormick pot roast seasoning mix".
+function blendName(title: string) {
+  return title
+    .split(/\s?[|–—-]\s|\s\(|\s#|\s(with|for|from)\s/)[0]
+    .replace(/^(how to make (your own )?|make (your own )?|myo:? |almost |selfmade |copycat )+/, "")
+    .replace(/\b(recipes?|homemade|copycat|clone|yourself|easy|best)\b/g, " ")
+    .replace(/[^a-z0-9' ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const SEASONINGS: Record<string, RegExp> = {
+  "spice-blends":
+    /(^|\b)(seasonings?( (blend|mix)(es)?)?|spices?( (blend|mix|mixture))?|(spice|herb|curry|pepper|peppercorn|chili|bean spice) (blend|mix)|herbs (and|&) spices|(garam|chaat|balti|indian|sambar|tandoori|gharum) masala|(curry|chili|chilli|garlic|onion|ginger|five spice|5 spice) powder( mix)?|(cinnamon|spice|vanilla|lime|lemon) sugar( mix)?|vanilla powder|onion flakes|herb blend mix|seasoning mix ole'?|herbes de provence|fines herbes|bouquet garni( mix)?|za'?atar|dukkah|baharat|berbere|ras el hanout|gomasio|furikake|togarashi|dust|paprika|(soup|broth|dressing|coating|salsa|stir fry|bake) mix|salad supreme|flavor packet|barbecue herbs)$/,
+  rubs: /\b(dry )?rubs?( (seasoning )?mix)?$/,
+  "seasoned-salts": /\bsalts?( (blend|seasoning mix|rubs?))?$|\bsalt substitute$/,
+  // Spice blends for making sausage ("Bratwurst Seasoning"), not the sausages themselves.
+  "sausage-seasonings": /\b(sausages?|bratwurst|brats?|wurst|chorizo|kielbasa|andouille|merguez|boerewors|salsiccia) (seasonings?|spices?)( (blend|mix))?$/,
+  sausages:
+    /(\w*wurst|\bbrats|\bsausages?|\bchorizo|\bmerguez|\bchipolata|\bsalsiccia|\bloukaniko|\bcevapcici|\bkielbasa|\bandouille|\bboerewors)( in a jar| without casing)?$/,
+};
+
+// Cooked sausage dishes ("Grilled Bratwurst", "Burger and Italian Sausage") aren't sausage-making recipes.
+const NOT_SAUSAGE_MAKING = /^(grilled|braised|pan fried|baked|roasted)\b|\bburgers?\b/;
+
+function seasonings(title: string): string[] {
+  const name = blendName(title);
+  const found = Object.keys(SEASONINGS).filter(
+    (slug) => SEASONINGS[slug].test(name) && !(slug === "sausages" && NOT_SAUSAGE_MAKING.test(name))
+  );
+  if (found.some((s) => s !== "sausages")) found.push("seasonings");
+  if (found.includes("sausage-seasonings")) found.push("spice-blends");
+  return found;
+}
+
+// ---------------------------------------------------------------------------
 // Diet (ingredient-based; a recipe needs a real ingredient list to qualify)
 // ---------------------------------------------------------------------------
 
@@ -251,6 +304,9 @@ export function tagRecipe(rawTitle: string, rawIngredients: string[], rawCuisine
   const cuisineDish = CUISINE_DISH[normalize(rawCuisine ?? "").trim()];
   if (cuisineDish) tags.add(cuisineDish);
   for (const d of diets(title, ingredients)) tags.add(d);
+  for (const s of seasonings(title)) tags.add(s);
+  // A blend named for what it seasons ("Chicken Seasoning", "Bratwurst Seasoning") has no meat in it.
+  if (tags.has("seasonings")) Object.keys(PROTEINS).forEach((p) => tags.delete(p));
   if (normalize(rawCuisine ?? "").trim() === "vegan") ["vegan", "vegetarian", "dairy-free"].forEach((d) => tags.add(d));
   return [...tags];
 }

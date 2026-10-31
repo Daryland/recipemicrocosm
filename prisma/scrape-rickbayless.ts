@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import * as cheerio from "cheerio";
+import { parseRecipePage } from "./rickbayless-parse";
 
 const prisma = new PrismaClient();
 
@@ -13,10 +13,6 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function cleanText(text: string): string {
-  return text.replace(/\s+/g, " ").trim();
-}
-
 async function fetchHtml(url: string): Promise<string> {
   const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -27,54 +23,6 @@ async function getRecipeUrls(): Promise<string[]> {
   const xml = await fetchHtml(SITEMAP_URL);
   const matches = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   return matches.filter((u) => /\/recipe\/[^/]+\/?$/.test(u) && u !== "https://www.rickbayless.com/recipe/");
-}
-
-interface ParsedRecipe {
-  title: string;
-  imageUrl?: string;
-  videoUrl?: string;
-  ingredients: string[];
-  steps: string[];
-  slug: string;
-}
-
-function parseRecipePage(html: string, url: string): ParsedRecipe | null {
-  const $ = cheerio.load(html);
-
-  const h1 = cleanText($("h1").first().text());
-  const spanishTitle = cleanText($(".spanish-title").first().text());
-  const title = spanishTitle ? `${h1} (${spanishTitle})` : h1;
-  if (!title) return null;
-
-  const imageUrl =
-    $("#recipe-image").attr("data-src") ||
-    $("#recipe-image").attr("src") ||
-    undefined;
-
-  const videoUrl = $(".recipe-instructions iframe[src*='youtube']").attr("src") || undefined;
-
-  const ingredients = $(".recipe-ingredients li")
-    .map((_, el) => cleanText($(el).text()))
-    .get()
-    .filter(Boolean);
-
-  let steps = $(".recipe-instructions p")
-    .map((_, el) => cleanText($(el).text()))
-    .get()
-    .filter(Boolean);
-  if (steps.length === 0) {
-    steps = $(".recipe-instructions li")
-      .map((_, el) => cleanText($(el).text()))
-      .get()
-      .filter(Boolean);
-  }
-
-  if (ingredients.length === 0 || steps.length === 0) return null;
-
-  const slugMatch = url.match(/\/recipe\/([^/]+)\/?$/);
-  const slug = slugMatch ? slugMatch[1] : cleanText(h1).toLowerCase().replace(/[^a-z0-9]+/g, "-");
-
-  return { title, imageUrl, videoUrl, ingredients, steps, slug };
 }
 
 async function uniqueSlug(base: string): Promise<string> {

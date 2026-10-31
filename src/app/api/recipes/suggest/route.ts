@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { matchSitePages } from "@/lib/sitePages";
 
 const MAX_SUGGESTIONS = 5;
 
@@ -35,5 +36,7 @@ export async function GET(req: Request) {
         })
       : [];
 
-  return NextResponse.json({ suggestions: [...prefix, ...contains] });
+  // Site pages ("priv" → Privacy Policy) come first; they carry an href instead of a recipe slug.
+  const pages = matchSitePages(q).map((p) => ({ id: p.href, slug: "", title: p.title, cuisine: "Page", href: p.href }));
+  return NextResponse.json({ suggestions: [...pages, ...prefix, ...contains].slice(0, MAX_SUGGESTIONS + pages.length) });
 }

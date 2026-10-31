@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { ChatBusyError, runRecipeChat } from "@/lib/recipeChat";
+import { chatSitePage } from "@/lib/sitePages";
 
 // Tool-calling rounds against a hosted model can outlast Vercel's default timeout.
 export const maxDuration = 60;
@@ -23,6 +24,17 @@ export async function POST(req: Request) {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Send a message of up to 1,000 characters." }, { status: 400 });
+  }
+
+  // Questions about the site itself (privacy, cookies, deleting an account) get a
+  // direct link instead of a recipe search, and work even when the model is down.
+  const last = parsed.data.messages[parsed.data.messages.length - 1];
+  const page = last.role === "user" ? chatSitePage(last.content) : undefined;
+  if (page) {
+    return NextResponse.json({
+      reply: page.chatReply,
+      recipes: [{ slug: page.href, href: page.href, title: page.title, cuisine: null, totalTime: null }],
+    });
   }
 
   try {

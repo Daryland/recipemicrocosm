@@ -8,6 +8,8 @@ interface Suggestion {
   slug: string;
   title: string;
   cuisine: string | null;
+  // Set for site pages like the Privacy Policy, which aren't recipes.
+  href?: string;
 }
 
 // Bold the part of the title that matches what was typed.
@@ -77,7 +79,7 @@ export function RecipeSearch({
   function goToRecipe(s: Suggestion) {
     setOpen(false);
     setQuery("");
-    router.push(`/recipes/${s.slug}`);
+    router.push(s.href ?? `/recipes/${s.slug}`);
   }
 
   function handleSubmit(e: React.FormEvent) {

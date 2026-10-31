@@ -38,7 +38,7 @@ export function parseBrowseQuery(params: URLSearchParams): BrowseQuery {
     cuisine: get("cuisine"),
     letter: get("letter"),
     q: get("q"),
-    tags: [get("ingredient"), get("dish"), get("diet")].filter((t): t is string => !!t),
+    tags: [get("seasoning"), get("ingredient"), get("dish"), get("diet")].filter((t): t is string => !!t),
     origin: get("origin"),
     region: get("region"),
     quick: get("quick") === "30",

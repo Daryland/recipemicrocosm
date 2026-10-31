@@ -1,11 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 type Status = "idle" | "sending" | "sent" | "error";
 
-export function ContactDialog() {
+interface ContactDialogProps {
+  // What the opening button says and looks like; defaults to the footer's "Get in touch".
+  triggerLabel?: string;
+  triggerClassName?: string;
+  title?: string;
+  intro?: string;
+  // Starting text for the message box, e.g. a removal-request template.
+  messageTemplate?: string;
+}
+
+export function ContactDialog({
+  triggerLabel = "Get in touch",
+  triggerClassName = "btn-secondary mt-4",
+  title = "Get in touch",
+  intro = "Ask a question, report a broken recipe, or share a favorite.",
+  messageTemplate,
+}: ContactDialogProps = {}) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // Several dialogs can be on one page (footer + removal request), so ids must be unique.
+  const titleId = useId();
   // When the form was opened; the server drops messages sent implausibly fast.
   const openedAt = useRef(0);
   const [status, setStatus] = useState<Status>("idle");
@@ -52,9 +70,9 @@ export function ContactDialog() {
           openedAt.current = Date.now();
           dialogRef.current?.showModal();
         }}
-        className="btn-secondary mt-4"
+        className={triggerClassName}
       >
-        Get in touch
+        {triggerLabel}
       </button>
 
       <dialog
@@ -62,12 +80,12 @@ export function ContactDialog() {
         // Clicking the backdrop (the dialog element itself, outside the panel) closes it.
         onClick={(e) => e.target === dialogRef.current && dialogRef.current?.close()}
         className="w-[calc(100%-2rem)] max-w-md rounded-lg border border-line bg-paper p-0 text-ink shadow-xl backdrop:bg-ink/40"
-        aria-labelledby="contact-title"
+        aria-labelledby={titleId}
       >
         <div className="p-6">
           <div className="flex items-start justify-between gap-4">
-            <h2 id="contact-title" className="text-lg font-bold">
-              Get in touch
+            <h2 id={titleId} className="text-lg font-bold">
+              {title}
             </h2>
             <button
               type="button"
@@ -88,7 +106,7 @@ export function ContactDialog() {
             </div>
           ) : (
             <form onSubmit={submit} className="mt-4 space-y-4">
-              <p className="text-sm text-ink-muted">Ask a question, report a broken recipe, or share a favorite.</p>
+              <p className="text-sm text-ink-muted">{intro}</p>
               <label className="block">
                 <span className="mb-1 block text-sm font-medium">Name</span>
                 <input name="name" required maxLength={100} autoComplete="name" className="field" />
@@ -99,7 +117,14 @@ export function ContactDialog() {
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm font-medium">Message</span>
-                <textarea name="message" required maxLength={5000} rows={5} className="field resize-y" />
+                <textarea
+                  name="message"
+                  required
+                  maxLength={5000}
+                  rows={messageTemplate ? 8 : 5}
+                  defaultValue={messageTemplate}
+                  className="field resize-y"
+                />
               </label>
               {/* Honeypot for bots; kept off-screen and out of the tab order. */}
               <input

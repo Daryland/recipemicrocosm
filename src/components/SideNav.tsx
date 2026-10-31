@@ -16,7 +16,7 @@ export interface MenuCounts {
 const PREVIEW = 6;
 
 // URL params the sidebar sets on /recipes. They combine, e.g. ?ingredient=chicken&origin=Indian.
-type Param = "ingredient" | "dish" | "diet" | "origin" | "region" | "quick" | "sort";
+type Param = "seasoning" | "ingredient" | "dish" | "diet" | "origin" | "region" | "quick" | "sort";
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -72,7 +72,7 @@ export function SideNav({ counts }: { counts: MenuCounts }) {
     return qs ? `/recipes?${qs}` : "/recipes";
   }
   const isActive = (param: Param, value: string) => current.get(param) === value;
-  const anyFilter = ["ingredient", "dish", "diet", "origin", "region", "quick", "cuisine", "q", "letter"].some((p) =>
+  const anyFilter = ["seasoning", "ingredient", "dish", "diet", "origin", "region", "quick", "cuisine", "q", "letter"].some((p) =>
     current.has(p)
   );
 
@@ -80,6 +80,8 @@ export function SideNav({ counts }: { counts: MenuCounts }) {
     current.get("region") ?? REGIONS.find((r) => r.origins.includes(current.get("origin") ?? ""))?.name ?? null;
   const [open, setOpen] = useState<Record<string, boolean>>({
     quick: true,
+    // A drop-down under Quick picks: closed unless a seasoning filter is on.
+    seasoning: current.has("seasoning"),
     ingredient: true,
     dish: true,
     diet: true,

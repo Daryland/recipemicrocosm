@@ -66,6 +66,8 @@ const TOOLS = [
 
 export interface ChatRecipe {
   slug: string;
+  // Set for site pages (e.g. the Privacy Policy) shown in place of a recipe.
+  href?: string;
   title: string;
   cuisine: string | null;
   totalTime: number | null;

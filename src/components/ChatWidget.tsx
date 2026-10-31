@@ -176,7 +176,7 @@ export function ChatWidget() {
                       {m.recipes.map((r) => (
                         <li key={r.slug}>
                           <Link
-                            href={`/recipes/${r.slug}`}
+                            href={r.href ?? `/recipes/${r.slug}`}
                             onClick={() => isMobile() && minimize()}
                             className="group flex items-baseline justify-between gap-3 px-3 py-3 hover:bg-paper sm:py-2"
                           >

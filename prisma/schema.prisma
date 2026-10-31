@@ -53,6 +53,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  // scrypt hash for email + password sign-in (see src/lib/password.ts); null for link/OAuth-only accounts.
+  passwordHash  String?
   createdAt     DateTime  @default(now())
 
   accounts       Account[]

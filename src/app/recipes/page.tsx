@@ -2,9 +2,10 @@ import Link from "next/link";
 import { RecipeCollection } from "@/components/RecipeCollection";
 import { browseParams, getBrowseCounts, getBrowsePage, parseBrowseQuery } from "@/lib/browse";
 import { SECTIONS } from "@/lib/taxonomy";
+import { matchSitePages } from "@/lib/sitePages";
 
 interface RecipesPageProps {
-  // cuisine, letter, q, the sidebar filters (ingredient, dish, diet, origin, region,
+  // cuisine, letter, q, the sidebar filters (seasoning, ingredient, dish, diet, origin, region,
   // quick), and sort/stars/seed from the toolbar. See parseBrowseQuery.
   searchParams: Record<string, string | string[] | undefined>;
 }
@@ -23,6 +24,7 @@ export default async function RecipesPage({ searchParams }: RecipesPageProps) {
 
   // e.g. "Chicken · Curries · Indian recipes", or "Results for “tacos” · Vegan"
   const filters = [
+    tagLabel("seasoning", urlParams.get("seasoning") ?? undefined),
     tagLabel("ingredient", urlParams.get("ingredient") ?? undefined),
     tagLabel("dish", urlParams.get("dish") ?? undefined),
     tagLabel("diet", urlParams.get("diet") ?? undefined),
@@ -41,8 +43,24 @@ export default async function RecipesPage({ searchParams }: RecipesPageProps) {
     ? "Recently added"
     : "All recipes";
 
+  // A search like "privacy" also points to that site page.
+  const pages = query.q ? matchSitePages(query.q) : [];
+
   return (
     <div className="mx-auto max-w-6xl">
+      {pages.map((p) => (
+        <Link
+          key={p.href}
+          href={p.href}
+          className="mb-6 flex items-center justify-between gap-4 rounded border border-line-strong bg-white px-4 py-3 hover:border-ink"
+        >
+          <span>
+            <span className="block text-xs font-bold uppercase tracking-wider text-ink-faint">Site page</span>
+            <span className="font-semibold text-ink">{p.title}</span>
+          </span>
+          <span aria-hidden="true" className="text-ink-muted">→</span>
+        </Link>
+      ))}
       <div className="mb-2 flex items-baseline gap-3">
         <h1 className="text-3xl font-extrabold tracking-tightest sm:text-4xl">{heading}</h1>
         <span className="text-sm tabular-nums text-ink-muted">{counts.total.toLocaleString()}</span>

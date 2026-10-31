@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { insertSectionHeaders, sectionHeader } from "./recipeSections";
 
 export interface ScrapedRecipe {
   title: string;
@@ -79,7 +80,10 @@ function flattenInstructions(value: unknown): string[] {
   if (typeof value === "object") {
     const obj = value as Record<string, unknown>;
     if (obj["@type"] === "HowToSection" && obj.itemListElement) {
-      return flattenInstructions(obj.itemListElement);
+      // Keep the part's name ("Make the sauce") as a header so parts stay separate.
+      const steps = flattenInstructions(obj.itemListElement);
+      const name = typeof obj.name === "string" ? obj.name.trim() : "";
+      return name && steps.length ? [sectionHeader(name), ...steps] : steps;
     }
     if (typeof obj.text === "string") return [obj.text.trim()];
     if (typeof obj.name === "string") return [obj.name.trim()];
@@ -170,8 +174,8 @@ function scrapeFromHeadings($: cheerio.CheerioAPI, url: string): ScrapedRecipe |
   };
 
   const ingredients = sectionItems(/^ingredients\b/i);
-  const steps = sectionItems(/^(method|instructions|directions|steps)\b/i).filter((s) => !/:$/.test(s));
-  if (ingredients.filter((i) => !/:$/.test(i)).length < 2 || steps.length < 1) return undefined;
+  const steps = sectionItems(/^(method|instructions|directions|steps)\b/i);
+  if (ingredients.filter((i) => !/:$/.test(i)).length < 2 || steps.filter((s) => !/:$/.test(s)).length < 1) return undefined;
 
   const notes = sectionItems(/^notes?\b/i).join("\n");
   const time = notes.match(/total time:?\s*(?:(\d+)\s*h(?:ours?|rs?)?)?\s*(?:(\d+)\s*min)/i);
@@ -193,6 +197,44 @@ function scrapeFromHeadings($: cheerio.CheerioAPI, url: string): ScrapedRecipe |
     sourceUrl: url,
     sourceName: new URL(url).hostname.replace(/^www\./, ""),
   };
+}
+
+/**
+ * schema.org has no way to group ingredients, so recipe plugins only show the
+ * parts ("For the dough", "For the sauce") in their HTML. Reads each part's name
+ * and item count from the first matching recipe card, in page order.
+ */
+const SECTION_LAYOUTS = [
+  // WP Recipe Maker
+  { container: ".wprm-recipe-ingredients-container", header: ".wprm-recipe-group-name", item: "li.wprm-recipe-ingredient", kind: "ingredients" },
+  { container: ".wprm-recipe-instructions-container", header: ".wprm-recipe-group-name", item: "li.wprm-recipe-instruction", kind: "steps" },
+  // Tasty Recipes
+  { container: ".tasty-recipes-ingredients", header: "h4, h5, strong", item: "li", kind: "ingredients" },
+  { container: ".tasty-recipes-instructions", header: "h4, h5, strong", item: "li", kind: "steps" },
+  // Mediavine Create
+  { container: ".mv-create-ingredients", header: "h4, h5, strong", item: "li", kind: "ingredients" },
+  { container: ".mv-create-instructions", header: "h4, h5, strong", item: "li", kind: "steps" },
+] as const;
+
+export function htmlSectionGroups($: cheerio.CheerioAPI, kind: "ingredients" | "steps"): { name: string; count: number }[] {
+  for (const layout of SECTION_LAYOUTS) {
+    if (layout.kind !== kind) continue;
+    const container = $(layout.container).first();
+    if (!container.length) continue;
+    const groups: { name: string; count: number }[] = [{ name: "", count: 0 }];
+    container.find(`${layout.header}, ${layout.item}`).each((_, el) => {
+      const node = $(el);
+      if (node.is(layout.item)) groups[groups.length - 1].count += 1;
+      else if (!node.closest("li").length) {
+        // Bold text inside an ingredient or step is emphasis, not a part name.
+        const name = node.text().replace(/\s+/g, " ").trim();
+        if (name) groups.push({ name, count: 0 });
+      }
+    });
+    const found = groups.filter((g) => g.count > 0);
+    if (found.length) return found;
+  }
+  return [];
 }
 
 /** Walks a JSON-LD node tree (which may use @graph) looking for a Recipe node. */
@@ -260,8 +302,15 @@ export async function scrapeRecipeFromUrl(url: string): Promise<ScrapedRecipe> {
   const title = decodeEntities(firstString(recipeNode.name)?.trim() || pageTitle || "Untitled Recipe");
   const imageUrl = bestImageUrl(recipeNode.image);
   const videoUrl = extractVideoUrl(recipeNode.video);
-  const ingredients = flattenIngredients(recipeNode.recipeIngredient ?? recipeNode.ingredients).map(decodeEntities);
-  const steps = flattenInstructions(recipeNode.recipeInstructions).map(decodeEntities);
+  const ingredients = insertSectionHeaders(
+    flattenIngredients(recipeNode.recipeIngredient ?? recipeNode.ingredients).map(decodeEntities),
+    htmlSectionGroups($, "ingredients")
+  );
+  // Steps keep JSON-LD section names when present; otherwise fall back to the card's HTML groups.
+  const steps = insertSectionHeaders(
+    flattenInstructions(recipeNode.recipeInstructions).map(decodeEntities),
+    htmlSectionGroups($, "steps")
+  );
   const prepTime = parseIsoDurationToMinutes(recipeNode.prepTime);
   const cookTime = parseIsoDurationToMinutes(recipeNode.cookTime);
   const totalTime = parseIsoDurationToMinutes(recipeNode.totalTime);

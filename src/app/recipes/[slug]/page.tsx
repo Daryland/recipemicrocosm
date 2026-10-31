@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import Image from "next/image";
@@ -10,6 +11,7 @@ import { StarRating } from "@/components/StarRating";
 import { combinedRating } from "@/lib/rating";
 import { DEVICE_COOKIE, validDeviceId } from "@/lib/device";
 import { decodeStringList } from "@/lib/recipeJson";
+import { groupSections } from "@/lib/recipeSections";
 
 export default async function RecipeDetailPage({ params }: { params: { slug: string } }) {
   const recipe = await prisma.recipe.findUnique({ where: { slug: params.slug } });
@@ -34,8 +36,13 @@ export default async function RecipeDetailPage({ params }: { params: { slug: str
       })
     : null;
 
-  const ingredients = decodeStringList(recipe.ingredients);
-  const steps = decodeStringList(recipe.steps);
+  // Multi-part recipes ("For the dough", "For the sauce") render each part under its own heading.
+  const ingredientSections = groupSections(decodeStringList(recipe.ingredients));
+  const stepSections = groupSections(decodeStringList(recipe.steps));
+  // Step numbers run on across parts, so "step 7" means the same thing everywhere.
+  const stepOffsets = stepSections.map((_, i) =>
+    stepSections.slice(0, i).reduce((n, s) => n + s.items.length, 0)
+  );
 
   const facts = [
     recipe.totalTime ? { label: "Total time", value: `${recipe.totalTime} min` } : null,
@@ -88,27 +95,41 @@ export default async function RecipeDetailPage({ params }: { params: { slug: str
       <div className="grid gap-12 md:grid-cols-[minmax(0,5fr)_minmax(0,8fr)]">
         <section>
           <h2 className="section-title">Ingredients</h2>
-          <ul className="divide-y divide-line">
-            {ingredients.map((ingredient, i) => (
-              <li key={i} className="py-2.5 text-[0.95rem] leading-snug">
-                {ingredient}
-              </li>
+          <div className="space-y-6">
+            {ingredientSections.map((section, s) => (
+              <div key={s}>
+                {section.title && <h3 className="part-title">{section.title}</h3>}
+                <ul className="divide-y divide-line">
+                  {section.items.map((ingredient, i) => (
+                    <li key={i} className="py-2.5 text-[0.95rem] leading-snug">
+                      {ingredient}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
 
         <section>
           <h2 className="section-title">Steps</h2>
-          <ol className="space-y-6">
-            {steps.map((step, i) => (
-              <li key={i} className="grid grid-cols-[2rem_1fr] gap-3">
-                <span className="pt-px text-lg font-extrabold tabular-nums leading-snug text-tomato-500">
-                  {i + 1}
-                </span>
-                <p className="max-w-prose text-[0.95rem] leading-relaxed">{step}</p>
-              </li>
+          <div className="space-y-10">
+            {stepSections.map((section, s) => (
+              <div key={s}>
+                {section.title && <h3 className="part-title">{section.title}</h3>}
+                <ol className="space-y-6">
+                  {section.items.map((step, i) => (
+                    <li key={i} className="grid grid-cols-[2rem_1fr] gap-3">
+                      <span className="pt-px text-lg font-extrabold tabular-nums leading-snug text-tomato-500">
+                        {stepOffsets[s] + i + 1}
+                      </span>
+                      <p className="max-w-prose text-[0.95rem] leading-relaxed">{step}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             ))}
-          </ol>
+          </div>
         </section>
       </div>
 
@@ -123,6 +144,10 @@ export default async function RecipeDetailPage({ params }: { params: { slug: str
           >
             {recipe.sourceName ?? recipe.sourceUrl}
           </a>
+          <span className="mx-2 text-ink-faint">·</span>
+          <Link href="/copyright" className="underline underline-offset-2 hover:text-ink">
+            Own this recipe or photo? Request removal
+          </Link>
         </p>
       )}
     </article>

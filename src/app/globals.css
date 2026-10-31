@@ -33,4 +33,8 @@
   .section-title {
     @apply mb-4 border-b border-line pb-2 text-lg font-bold tracking-tight;
   }
+  /* One part of a multi-part recipe, e.g. "For the sauce" */
+  .part-title {
+    @apply mb-2 text-xs font-bold uppercase tracking-wider text-tomato-500;
+  }
 }
