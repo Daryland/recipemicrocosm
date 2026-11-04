@@ -46,3 +46,6 @@ scripts/*-run.log
 
 # Local database exports
 backups/
+
+# image localizer working file
+scripts/localize-failures.json
