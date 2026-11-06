@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 // Hamburger button + slide-in panel that shows the sidebar on screens where it's hidden.
 export function MobileMenu({ children }: { children: React.ReactNode }) {
@@ -32,7 +33,9 @@ export function MobileMenu({ children }: { children: React.ReactNode }) {
         </svg>
       </button>
 
-      {open && (
+      {/* Portaled to <body>: the header's backdrop-blur makes it the containing block for
+          fixed-position children, which would otherwise squash this overlay into the header. */}
+      {open && createPortal(
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Browse recipes">
           <div className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} />
           <div
@@ -53,7 +56,8 @@ export function MobileMenu({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex-1 overflow-y-auto px-3 py-4">{children}</div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
